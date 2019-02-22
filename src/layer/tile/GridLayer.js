@@ -644,7 +644,7 @@ export var GridLayer = Layer.extend({
 		if (this._tileZoom === undefined) { return; }	// if out of minzoom/maxzoom
 
 		var pixelBounds = this._getTiledPixelBounds(center),
-		    tileRange = this._pxBoundsToTileRange(pixelBounds),
+		    tileRange = this._cropTileRangeToBounds(this._pxBoundsToTileRange(pixelBounds)),
 		    tileCenter = tileRange.getCenter(),
 		    queue = [],
 		    margin = this.options.keepBuffer,
@@ -708,6 +708,22 @@ export var GridLayer = Layer.extend({
 
 			this._level.el.appendChild(fragment);
 		}
+	},
+	// Check if tileRange is out of the bounds and use bounds instead of tileRange to avoid unecessary tile per tile validation
+	_cropTileRangeToBounds: function (tileRange) {
+		var crs = this._map.options.crs;
+
+		if (!crs.infinite && this.options.bounds) {
+			// don't load tile if it's out of bounds and not wrapped
+			var bounds = this._globalTileRange;
+			tileRange.min.x = tileRange.min.x < bounds.min.x ? bounds.min.x : tileRange.min.x;
+			tileRange.max.x = tileRange.max.x > bounds.max.x ? bounds.max.x : tileRange.max.x;
+			tileRange.min.y = tileRange.min.y < bounds.min.y ? bounds.min.y : tileRange.min.y;
+			tileRange.max.y = tileRange.max.y > bounds.max.y ? bounds.max.y : tileRange.max.y;
+			return tileRange;
+		}
+
+		return tileRange;
 	},
 
 	_isValidTile: function (coords) {
